@@ -220,22 +220,3 @@ if st.button("📥 পিডিএফ জেনারেট এবং ডাউ�
         file_name=f"{series_choice.lower()}_complete_rate_chart.pdf",
         mime="application/pdf"
     )
-RIES - {color_label} ITEMS</b>", section_style))
-            rows = []
-            for item in magnus_items:
-                name, sap, lp = item[0], item[sap_idx], item[lp_idx]
-                p_res = calc_all_prices(lp)
-                rows.append([name, sap, f"{lp:.0f}", f"{p_res[0]:.1f}"] + [f"{val:.1f}" for val in p_res[1:]])
-            story.append(build_table(headers, rows))
-            story.append(Spacer(1, 10))
-
-    doc.build(story)
-    buffer.seek(0)
-
-    st.success("পিডিএফ সফলভাবে তৈরি হয়েছে!")
-    st.download_button(
-        label=f"📥 {series_choice} Complete Rate Chart PDF ডাউনলোড করুন",
-        data=buffer,
-        file_name=f"{series_choice.lower()}_complete_rate_chart.pdf",
-        mime="application/pdf"
-    )

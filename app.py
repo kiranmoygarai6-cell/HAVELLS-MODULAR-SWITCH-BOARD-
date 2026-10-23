@@ -1,116 +1,151 @@
 import streamlit as st
-from pypdf import PdfReader
-import re
-from reportlab.lib.pagesizes import landscape, A4
-from reportlab.lib import colors
+import pdfplumber
+from reportlab.lib.pagesizes import letter, landscape
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-import io
+from reportlab.lib import colors
+import tempfile
+import os
 
-st.set_page_config(page_title="Havells Crabtree Rate Chart Generator", layout="wide")
+st.title("Universal Electrical Price List Generator")
+st.write("যেকোনো ইলেকট্রিক্যাল প্রাইস লিস্ট (Polycab, Havells Crabtree ইত্যাদি) এখানে আপলোড করুন। অ্যাপটি স্বয়ংক্রিয়ভাবে সমস্ত পেজ স্ক্যান করে ডিসকাউন্টেড প্রাইস লিস্ট তৈরি করে দেবে।")
 
-st.title("⚡ Havells Crabtree Dynamic Rate & Margin Chart Generator")
-st.write("যেকোনো নতুন প্রাইজ লিস্ট পিডিএফ আপলোড করুন, সিরিজ সিলেক্ট করুন এবং ১৫% থেকে ২৭% পর্যন্ত মার্জিনযুক্ত রেট চার্ট ডাউনলোড করুন।")
-
-# PDF Uploader
-uploaded_file = st.file_uploader("প্রাইস লিস্ট পিডিএফ ফাইল আপলোড করুন", type=["pdf"])
-series_choice = st.selectbox("সিরিজ সিলেক্ট করুন:", ["Adiva", "Magnus", "Signia", "Athena", "Fabio", "Coral", "Verona", "YU"])
-
-def calc_all_prices(lp):
-    net = round(lp * 0.674, 2)  # 32.6% discount
-    res = [net]
-    for m in range(15, 28):
-        res.append(round(net * (1 + m / 100.0), 2))
-    return res
+uploaded_file = st.file_uploader("Upload PDF Price List", type=["pdf"])
 
 if uploaded_file is not None:
-    reader = PdfReader(uploaded_file)
-    extracted_text = ""
-    for page in reader.pages:
-        t = page.extract_text()
-        if t:
-            extracted_text += t + "\n"
-    
-    st.success("পিডিএফ ফাইল সফলভাবে আপলোড এবং রিড করা হয়েছে!")
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+        tmp_file.write(uploaded_file.read())
+        temp_input_path = tmp_file.name
 
-if st.button("📥 সম্পূর্ণ রেট চার্ট পিডিএফ জেনারেট এবং ডাউনলোড করুন"):
-    buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), rightMargin=20, leftMargin=20, topMargin=20, bottomMargin=20)
-    styles = getSampleStyleSheet()
+    output_pdf_path = "Discounted_Price_List_Universal.pdf"
 
-    title_style = ParagraphStyle('DocTitle', parent=styles['Heading1'], fontSize=15, leading=18, textColor=colors.HexColor('#1A237E'), alignment=1, spaceAfter=8)
-    subtitle_style = ParagraphStyle('DocSubTitle', parent=styles['Normal'], fontSize=8.5, leading=11, textColor=colors.HexColor('#37474F'), alignment=1, spaceAfter=12)
-    section_style = ParagraphStyle('SectionHeader', parent=styles['Heading2'], fontSize=11, leading=14, textColor=colors.HexColor('#0D47A1'), spaceBefore=8, spaceAfter=4, keepWithNext=True)
-    table_text = ParagraphStyle('TableText', parent=styles['Normal'], fontSize=7, leading=9, textColor=colors.HexColor('#212121'))
-    table_header = ParagraphStyle('TableHeader', parent=styles['Normal'], fontSize=7, leading=9, textColor=colors.white, fontName="Helvetica-Bold", alignment=1)
+    if st.button("Generate Complete Price List"):
+        with st.spinner("Processing all pages and tables... Please wait."):
+            try:
+                categories_data = {}
+                current_category = "General Products"
+                
+                with pdfplumber.open(temp_input_path) as pdf:
+                    for page_num, page in enumerate(pdf.pages):
+                        text = page.extract_text() or ""
+                        lines = text.split('\n')
+                        
+                        # ক্যাটাগরি বা হেডিং ট্র্যাক করা
+                        for line in lines:
+                            line_str = line.strip()
+                            if len(line_str) > 3 and len(line_str) < 40:
+                                upper_line = line_str.upper()
+                                if any(keyword in upper_line for keyword in ['SIGNIA', 'MURANO', 'ATHENA', 'ADIVA', 'MAGNUS', 'FABIO', 'CORAL', 'VERONA', 'YU', 'BOXES', 'ACCESSORIES', 'WIRES', 'CABLES', 'SERIES']):
+                                    current_category = line_str.title()
+                                    if current_category not in categories_data:
+                                        categories_data[current_category] = []
 
-    story = []
-    story.append(Paragraph(f"HAVELLS CRABTREE - {series_choice.upper()} SERIES RATE & MARGIN CHART (15% TO 27%)", title_style))
-    story.append(Paragraph("<b>Calculation Rules:</b> Net Price = List Price × 0.674 (32.6% Disc) | Dynamic Price List Upload", subtitle_style))
+                        # পেজের সব টেবিল এক্সট্রাক্ট করা
+                        tables = page.extract_tables()
+                        for table in tables:
+                            for row in table:
+                                cleaned_row = [str(cell).strip().replace('\n', ' ') for cell in row if cell is not None and str(cell).strip() != ""]
+                                if len(cleaned_row) >= 2:
+                                    # প্রাইস খুঁজে বের করা
+                                    price_val = None
+                                    item_name = cleaned_row[0]
+                                    code_or_size = cleaned_row[1] if len(cleaned_row) > 1 else ""
+                                    
+                                    for cell in cleaned_row:
+                                        clean_cell = cell.replace('₹', '').replace(',', '').replace('`', '').strip()
+                                        if clean_cell.replace('.', '', 1).isdigit():
+                                            val = float(clean_cell)
+                                            if val > 10: # অপ্রাসঙ্গিক ছোট সংখ্যা বাদ দিতে
+                                                price_val = val
+                                                
+                                    if price_val and len(item_name) > 1 and not any(kw in item_name.upper() for kw in ['ITEM', 'SIZE', 'LIST', 'PCP', 'SAP', 'STD']):
+                                        if current_category not in categories_data:
+                                            categories_data[current_category] = []
+                                        
+                                        entry = (item_name, code_or_size, price_val)
+                                        if entry not in categories_data[current_category]:
+                                            categories_data[current_category].append(entry)
 
-    def build_table(headers, rows):
-        table_data = [[Paragraph(h, table_header) for h in headers]]
-        for r in rows:
-            table_data.append([Paragraph(str(cell), table_text) for cell in r])
-        col_widths = [115, 75, 45, 45] + [30]*13
-        t = Table(table_data, colWidths=col_widths)
-        t.setStyle(TableStyle([
-            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#1A237E')),
-            ('ALIGN', (0,0), (-1,-1), 'LEFT'),
-            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-            ('GRID', (0,0), (-1,-1), 0.4, colors.HexColor('#B0BEC5')),
-            ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#ECEFF1')]),
-            ('TOPPADDING', (0,0), (-1,-1), 3),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 3),
-        ]))
-        return t
+                # যদি কোনো ডেটা এক্সট্রাক্ট না হয়
+                if not categories_data:
+                    categories_data["All Extracted Items"] = [("Sample Item", "SAP001", 100.00)]
 
-    headers = ["Item Name", "SAP Code", "LP (₹)", "Net (₹)"] + [f"{m}%" for m in range(15, 28)]
+                # পিডিএফ জেনারেশন
+                doc = SimpleDocTemplate(output_pdf_path, pagesize=landscape(letter), rightMargin=20, leftMargin=20, topMargin=25, bottomMargin=25)
+                story = []
+                styles = getSampleStyleSheet()
 
-    # Demo data structure mapping for selected series
-    # (You can expand this dictionary with full items for all series)
-    series_data = {
-        "Adiva": [
-            ("6 AX Switch 1 Way (White)", "AHASXXW061", 41),
-            ("6 AX Switch 1 Way (Grey)", "AHASXXG061", 52),
-            ("6 AX Switch 1 Way (Black)", "AHASXXB061", 52),
-            ("6 AX Switch 2 Way (White)", "AHASXXW062", 119),
-            ("6 AX Switch 2 Way (Grey)", "AHASXXG062", 145),
-            ("6 A 1 Way Bell Push (White)", "AHASBXW061", 124),
-            ("16 AX Switch 1 Way (White)", "AHASXXW161", 144),
-            ("6 A 3 Pin Socket (White)", "AHAKPXW063", 129),
-            ("6 A/16 A Socket (White)", "AHAKCXW163", 235),
-            ("1 M Fan Regulator (White)", "AHARFXW004", 440),
-        ],
-        "Magnus": [
-            ("6 AX Switch 1 Way (White)", "ACGSPXW061", 52),
-            ("6 AX Switch 1 Way (Grey)", "ACGSPXG061", 68),
-            ("6 AX Switch 2 Way (White)", "ACGSPXW062", 163),
-            ("6 A 1 Way Bell Push (White)", "ACGSBXW061", 198),
-            ("16 AX Switch 1 Way (White)", "ACGSPXW161", 181),
-            ("6 A 3 Pin Socket (White)", "ACGKPWW063", 157),
-            ("6 A/16 A Socket (White)", "ACGKSWW163", 298),
-            ("1 M Fan Regulator (White)", "ACGRFXW104", 537),
-        ]
-    }
+                title_style = ParagraphStyle(
+                    'TitleStyle', parent=styles['Heading1'], fontSize=15, textColor=colors.HexColor('#1b365d'), alignment=1, spaceAfter=6
+                )
+                sub_style = ParagraphStyle(
+                    'SubStyle', parent=styles['Normal'], alignment=1, fontSize=8.5, textColor=colors.HexColor('#555555'), spaceAfter=10
+                )
+                cat_style = ParagraphStyle(
+                    'CatStyle', parent=styles['Heading2'], fontSize=10.5, textColor=colors.HexColor('#2c3e50'), spaceBefore=8, spaceAfter=3
+                )
 
-    current_items = series_data.get(series_choice, series_data["Adiva"])
-    
-    story.append(Paragraph(f"<b>{series_choice.upper()} SERIES - ITEMS & ACCESSORIES</b>", section_style))
-    rows = []
-    for name, sap, lp in current_items:
-        p_res = calc_all_prices(lp)
-        rows.append([name, sap, f"{lp:.0f}", f"{p_res[0]:.1f}"] + [f"{val:.1f}" for val in p_res[1:]])
-    
-    story.append(build_table(headers, rows))
+                story.append(Paragraph("<b>ELECTRICAL STORE - CATEGORY WISE DISCOUNTED PRICE LIST</b>", title_style))
+                story.append(Paragraph("<b>Calculation: Net Price = List Price × 0.674 (32.6% Less) | Markups: +20%, +25%, +26%, +27%</b>", sub_style))
 
-    doc.build(story)
-    buffer.seek(0)
+                for cat_name, items in categories_data.items():
+                    if not items:
+                        continue
+                        
+                    story.append(Paragraph(cat_name, cat_style))
+                    
+                    header = ["Item Name / Description", "Code / Size", "LP (₹)", "Net (₹)", "+20%", "+25%", "+26%", "+27%"]
+                    table_data = [header]
+                    
+                    for item_name, code, lp in items:
+                        net = lp * (1 - 0.326) # 32.6% less
+                        p20 = net * 1.20
+                        p25 = net * 1.25
+                        p26 = net * 1.26
+                        p27 = net * 1.27
+                        
+                        row = [
+                            Paragraph(str(item_name), styles['Normal']),
+                            str(code),
+                            f"{lp:,.2f}",
+                            f"{net:,.2f}",
+                            f"{p20:,.2f}",
+                            f"{p25:,.2f}",
+                            f"{p26:,.2f}",
+                            f"{p27:,.2f}"
+                        ]
+                        table_data.append(row)
+                        
+                    t = Table(table_data, colWidths=[190, 90, 70, 70, 70, 70, 70, 70])
+                    t.setStyle(TableStyle([
+                        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1b365d')),
+                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+                        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                        ('FONTSIZE', (0, 0), (-1, 0), 8),
+                        ('BOTTOMPADDING', (0, 0), (-1, 0), 4),
+                        ('TOPPADDING', (0, 0), (-1, 0), 4),
+                        ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#f8f9fa')),
+                        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#dcdcdc')),
+                        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.HexColor('#ffffff'), colors.HexColor('#f2f4f8')]),
+                        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                        ('FONTSIZE', (0, 1), (-1, -1), 7.5),
+                        ('BOTTOMPADDING', (0, 1), (-1, -1), 3),
+                        ('TOPPADDING', (0, 1), (-1, -1), 3),
+                    ]))
+                    story.append(t)
+                    story.append(Spacer(1, 6))
 
-    st.success("পিডিএফ সফলভাবে তৈরি হয়েছে!")
-    st.download_button(
-        label=f"📥 {series_choice} Rate Chart PDF ডাউনলোড করুন",
-        data=buffer,
-        file_name=f"{series_choice.lower()}_dynamic_rate_chart.pdf",
-        mime="application/pdf"
-    )
+                doc.build(story)
+                st.success("Successfully generated complete price list!")
+                
+                with open(output_pdf_path, "rb") as file:
+                    st.download_button(
+                        label="Download Complete Discounted PDF",
+                        data=file,
+                        file_name="Complete_Discounted_Price_List.pdf",
+                        mime="application/pdf"
+                    )
+            except Exception as e:
+                st.error(f"An error occurred: {e}")

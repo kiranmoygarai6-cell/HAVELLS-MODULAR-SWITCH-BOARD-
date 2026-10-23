@@ -8,7 +8,7 @@ import io
 st.set_page_config(page_title="Havells Crabtree Rate Chart Generator", layout="wide")
 
 st.title("⚡ Havells Crabtree Rate & Margin Chart Generator")
-st.write("সিরিজ সিলেক্ট করুন এবং ১৫% থেকে ২৭% পর্যন্ত মার্জিনযুক্ত সম্পূর্ণ রেট চার্ট পিডিএফ ডাউনলোড করুন।")
+st.write("সিরিজ সিলেক্ট করুন এবং ১৫% থেকে ২৭% পর্যন্ত মার্জিনযুক্ত সম্পূর্ণ রেট চার্ট (সুইচ, সকেট ও প্লেটসহ) পিডিএফ ডাউনলোড করুন।")
 
 series_choice = st.selectbox("সিরিজ সিলেক্ট করুন:", ["Magnus", "Adiva"])
 
@@ -19,7 +19,7 @@ def calc_all_prices(lp):
         res.append(round(net * (1 + m / 100.0), 2))
     return res
 
-# Full Adiva Data
+# ----------------- ADIVA DATA -----------------
 adiva_items = [
     ("6 AX Switch 1 Way", "AHASXXW061", 41, "AHASXXG061", 52, "AHASXXB061", 52),
     ("6 AX Switch 2 Way", "AHASXXW062", 119, "AHASXXG062", 145, "AHASXXB062", 145),
@@ -67,7 +67,20 @@ adiva_items = [
     ("32 A SP 'C' Mini MCB", "DHANCSPA032", 366, "DHANCSPA320MR", 441, "DHANCSPA320EB", 441),
 ]
 
-# Full Magnus Data
+adiva_plates = [
+    ("Combined Plates - White", {1: ("AHAPLCWV01", 108), 2: ("AHAPLCWV02", 108), 3: ("AHAPLCWV03", 147), 4: ("AHAPLCWV04", 169), 6: ("AHAPLCWV06", 249), 8: ("AHAPLCWV08", 316), "8H": ("AHAPLCWH08", 316), 9: ("AHAPLCWV09", 352), 12: ("AHAPLCWV12", 382), 16: ("AHAPLCWV16", 402), 18: ("AHAPLCWV18", 417)}),
+    ("Combined Plates - Grey", {1: ("AHAPLCGV01", 123), 2: ("AHAPLCGV02", 123), 3: ("AHAPLCGV03", 169), 4: ("AHAPLCGV04", 195), 6: ("AHAPLCGV06", 285), 8: ("AHAPLCGV08", 365), "8H": ("AHAPLCGH08", 365), 9: ("AHAPLCGV09", 409), 12: ("AHAPLCGV12", 443), 16: ("AHAPLCGV16", 464), 18: ("AHAPLCGV18", 481)}),
+    ("Combined Plates - Black", {1: ("AHAPLCBV01", 123), 2: ("AHAPLCBV02", 123), 3: ("AHAPLCBV03", 169), 4: ("AHAPLCBV04", 195), 6: ("AHAPLCBV06", 285), 8: ("AHAPLCBV08", 365), "8H": ("AHAPLCBH08", 365), 9: ("AHAPLCBV09", 409), 12: ("AHAPLCBV12", 443), 16: ("AHAPLCBV16", 464), 18: ("AHAPLCBV18", 481)}),
+    ("Combined Plates - White with Chrome Bezel", {1: ("AHAPLBWV01", 120), 2: ("AHAPLBWV02", 120), 3: ("AHAPLBWV03", 161), 4: ("AHAPLBWV04", 188), 6: ("AHAPLBWV06", 272), 8: ("AHAPLBWV08", 350), "8H": ("AHAPLBWH08", 350), 9: ("AHAPLBWV09", 391), 12: ("AHAPLBWV12", 423), 16: ("AHAPLBWV16", 445), 18: ("AHAPLBWV18", 463)}),
+    ("Combined Plates - White with Rose Gold", {1: ("AHAPLBAV01", 122), 2: ("AHAPLBAV02", 122), 3: ("AHAPLBAV03", 164), 4: ("AHAPLBAV04", 193), 6: ("AHAPLBAV06", 280), 8: ("AHAPLBAV08", 357), "8H": ("AHAPLBAH08", 357), 9: ("AHAPLBAV09", 402), 12: ("AHAPLBAV12", 433), 16: ("AHAPLBAV16", 455), 18: ("AHAPLBAV18", 473)}),
+    ("Combined Plates - Grey with Rose Gold", {1: ("AHAPLBGV01", 148), 2: ("AHAPLBGV02", 148), 3: ("AHAPLBGV03", 200), 4: ("AHAPLBGV04", 229), 6: ("AHAPLBGV06", 336), 8: ("AHAPLBGV08", 430), "8H": ("AHAPLBGH08", 430), 9: ("AHAPLBGV09", 482), 12: ("AHAPLBGV12", 524), 16: ("AHAPLBGV16", 547), 18: ("AHAPLBGV18", 569)}),
+    ("Combined Plates - Black with Rose Gold", {1: ("AHAPLBBV01", 148), 2: ("AHAPLBBV02", 148), 3: ("AHAPLBBV03", 200), 4: ("AHAPLBBV04", 229), 6: ("AHAPLBBV06", 336), 8: ("AHAPLBBV08", 430), "8H": ("AHAPLBBH08", 430), 9: ("AHAPLBBV09", 482), 12: ("AHAPLBBV12", 524), 16: ("AHAPLBBV16", 547), 18: ("AHAPLBBV18", 569)}),
+    ("Combined Plates - Blue with Chrome Bezel", {1: ("AHAPLBUV01", 143), 2: ("AHAPLBUV02", 145), 3: ("AHAPLBUV03", 195), 4: ("AHAPLBUV04", 223), 6: ("AHAPLBUV06", 328), 8: ("AHAPLBUV08", 418), "8H": ("AHAPLBUH08", 418), 9: ("AHAPLBUV09", 470), 12: ("AHAPLBUV12", 511), 16: ("AHAPLBUV16", 532), 18: ("AHAPLBUV18", 553)}),
+    ("Combined Plates - Champagne Gold with Rose Gold", {1: ("AHAPLBRV01", 148), 2: ("AHAPLBRV02", 150), 3: ("AHAPLBRV03", 200), 4: ("AHAPLBRV04", 229), 6: ("AHAPLBRV06", 336), 8: ("AHAPLBRV08", 430), "8H": ("AHAPLBRH08", 430), 9: ("AHAPLBRV09", 482), 12: ("AHAPLBRV12", 524), 16: ("AHAPLBRV16", 547), 18: ("AHAPLBRV18", 569)}),
+    ("Combined Plates - Rustic Bronze with Rose Gold", {1: ("AHAPLBMV01", 148), 2: ("AHAPLBMV02", 150), 3: ("AHAPLBMV03", 200), 4: ("AHAPLBMV04", 229), 6: ("AHAPLBMV06", 336), 8: ("AHAPLBMV08", 430), "8H": ("AHAPLBMH08", 430), 9: ("AHAPLBMV09", 482), 12: ("AHAPLBMV12", 524), 16: ("AHAPLBMV16", 547), 18: ("AHAPLBMV18", 569)})
+]
+
+# ----------------- MAGNUS DATA -----------------
 magnus_items = [
     ("6 AX Switch 1 Way", "ACGSPXW061", 52, "ACGSPXG061", 68),
     ("6 AX Switch 2 Way", "ACGSPXW062", 163, "ACGSPXG062", 195),
@@ -101,6 +114,18 @@ magnus_items = [
     ("20 A SP 'C' Mini MCB", "DCSNCSPA201MMR", 316, "DCSNCSPA201MWH", 381),
     ("25 A SP 'C' Mini MCB", "DCSNCSPA251MMR", 316, "DCSNCSPA251MWH", 381),
     ("32 A SP 'C' Mini MCB", "DCSNCSPA321MMR", 316, "DCSNCSPA321MWH", 381),
+]
+
+magnus_plates = [
+    ("Combined Plates - Acrylic Steel Grey", {1: ("ACGPTOFV01", 292), 2: ("ACGPTOFV02", 292), 3: ("ACGPTOFV03", 349), 4: ("ACGPTOFV04", 427), 6: ("ACGPTOFV06", 579), 8: ("ACGPTOFV08", 760), "8H": ("ACGPTOFH08", 760), 12: ("ACGPTOFV12", 965), 16: ("ACGPTOFV16", 1252), 18: ("ACGPTOFV18", 1255)}),
+    ("Combined Plates - Acrylic Brown", {1: ("ACGPTOAV01", 292), 2: ("ACGPTOAV02", 292), 3: ("ACGPTOAV03", 349), 4: ("ACGPTOAV04", 427), 6: ("ACGPTOAV06", 579), 8: ("ACGPTOAV08", 760), "8H": ("ACGPTOAH08", 760), 12: ("ACGPTOAV12", 965), 16: ("ACGPTOAV16", 1252), 18: ("ACGPTOAV18", 1255)}),
+    ("Combined Plates - Acrylic Black", {1: ("ACGPTOBV01", 292), 2: ("ACGPTOBV02", 292), 3: ("ACGPTOBV03", 349), 4: ("ACGPTOBV04", 427), 6: ("ACGPTOBV06", 579), 8: ("ACGPTOBV08", 760), "8H": ("ACGPTOBH08", 760), 12: ("ACGPTOBV12", 965), 16: ("ACGPTOBV16", 1252), 18: ("ACGPTOBV18", 1255)}),
+    ("Combined Plates - Acrylic White", {1: ("ACGPTOWW01", 292), 2: ("ACGPTOWV02", 292), 3: ("ACGPTOWV03", 349), 4: ("ACGPTOWV04", 427), 6: ("ACGPTOWV06", 579), 8: ("ACGPTOWV08", 760), "8H": ("ACGPTOWH08", 760), 12: ("ACGPTOWW12", 965), 16: ("ACGPTOWW16", 1252), 18: ("ACGPTOWW18", 1255)}),
+    ("Combined Plates - Acrylic Sea Green", {1: ("ACGPTONV01", 292), 2: ("ACGPTONV02", 292), 3: ("ACGPTONV03", 349), 4: ("ACGPTONV04", 427), 6: ("ACGPTONV06", 579), 8: ("ACGPTONV08", 760), "8H": ("ACGPTONH08", 760), 12: ("ACGPTONV12", 965), 16: ("ACGPTONV16", 1252), 18: ("ACGPTONV18", 1255)}),
+    ("Combined Plates - Acrylic Walnut Wood", {1: ("ACGPTODV01", 303), 2: ("ACGPTODV02", 303), 3: ("ACGPTODV03", 359), 4: ("ACGPTODV04", 441), 6: ("ACGPTODV06", 594), 8: ("ACGPTODV08", 782), "8H": ("ACGPTODH08", 782), 12: ("ACGPTODV12", 994), 16: ("ACGPTODV16", 1286), 18: ("ACGPTODV18", 1293)}),
+    ("Combined Plates - Matt White", {1: ("ACGPPCWW01", 127), 2: ("ACGPPCWV02", 127), 3: ("ACGPPCWV03", 151), 4: ("ACGPPCWV04", 185), 6: ("ACGPPCWV06", 251), 8: ("ACGPPCWV08", 331), "8H": ("ACGPPCWH08", 331), 12: ("ACGPPCWW12", 418), 16: ("ACGPPCWW16", 544), 18: ("ACGPPCWW18", 545)}),
+    ("Combined Plates - Matt Grey", {1: ("ACGPPCGV01", 149), 2: ("ACGPPCGV02", 149), 3: ("ACGPPCGV03", 179), 4: ("ACGPPCGV04", 218), 6: ("ACGPPCGV06", 296), 8: ("ACGPPCGV08", 386), "8H": ("ACGPPCGH08", 386), 12: ("ACGPPCGV12", 490), 16: ("ACGPPCGV16", 638), 18: ("ACGPPCGV18", 641)}),
+    ("Combined Plates - Matt Gold", {1: ("ACGPPCLV01", 149), 2: ("ACGPPCLV02", 149), 3: ("ACGPPCLV03", 179), 4: ("ACGPPCLV04", 218), 6: ("ACGPPCLV06", 296), 8: ("ACGPPCLV08", 386), "8H": ("ACGPPCLH08", 386), 12: ("ACGPPCLV12", 490), 16: ("ACGPPCLV16", 638), 18: ("ACGPPCLV18", 641)})
 ]
 
 if st.button("📥 পিডিএফ জেনারেট এবং ডাউনলোড করুন"):
@@ -148,10 +173,54 @@ if st.button("📥 পিডিএফ জেনারেট এবং ডাউ�
                 rows.append([name, sap, f"{lp:.0f}", f"{p_res[0]:.1f}"] + [f"{val:.1f}" for val in p_res[1:]])
             story.append(build_table(headers, rows))
             story.append(Spacer(1, 10))
+        
+        # Add Plates for Adiva
+        story.append(Paragraph("<b>ADIVA SERIES - MODULAR COMBINED PLATES</b>", section_style))
+        for group_name, pdict in adiva_plates:
+            story.append(Paragraph(f"<b>{group_name}</b>", ParagraphStyle('SubSec', parent=styles['Heading3'], fontSize=9.5, textColor=colors.HexColor('#0D47A1'), spaceBefore=6, spaceAfter=2)))
+            p_rows = []
+            for size_key, (sap, lp) in pdict.items():
+                p_res = calc_all_prices(lp)
+                size_str = f"{size_key} M" if str(size_key).isdigit() else f"{size_key}"
+                p_rows.append([f"Combined Plate - {size_str}", sap, f"{lp:.0f}", f"{p_res[0]:.1f}"] + [f"{val:.1f}" for val in p_res[1:]])
+            story.append(build_table(headers, p_rows))
+            story.append(Spacer(1, 6))
+
     else: # Magnus
         groups = [("WHITE", 1, 2), ("GREY", 3, 4)]
         for color_label, sap_idx, lp_idx in groups:
             story.append(Paragraph(f"<b>MAGNUS SERIES - {color_label} ITEMS</b>", section_style))
+            rows = []
+            for item in magnus_items:
+                name, sap, lp = item[0], item[sap_idx], item[lp_idx]
+                p_res = calc_all_prices(lp)
+                rows.append([name, sap, f"{lp:.0f}", f"{p_res[0]:.1f}"] + [f"{val:.1f}" for val in p_res[1:]])
+            story.append(build_table(headers, rows))
+            story.append(Spacer(1, 10))
+            
+        # Add Plates for Magnus
+        story.append(Paragraph("<b>MAGNUS SERIES - MODULAR COMBINED PLATES</b>", section_style))
+        for group_name, pdict in magnus_plates:
+            story.append(Paragraph(f"<b>{group_name}</b>", ParagraphStyle('SubSec', parent=styles['Heading3'], fontSize=9.5, textColor=colors.HexColor('#0D47A1'), spaceBefore=6, spaceAfter=2)))
+            p_rows = []
+            for size_key, (sap, lp) in pdict.items():
+                p_res = calc_all_prices(lp)
+                size_str = f"{size_key} M" if str(size_key).isdigit() else f"{size_key}"
+                p_rows.append([f"Combined Plate - {size_str}", sap, f"{lp:.0f}", f"{p_res[0]:.1f}"] + [f"{val:.1f}" for val in p_res[1:]])
+            story.append(build_table(headers, p_rows))
+            story.append(Spacer(1, 6))
+
+    doc.build(story)
+    buffer.seek(0)
+
+    st.success("পিডিএফ সফলভাবে তৈরি হয়েছে!")
+    st.download_button(
+        label=f"📥 {series_choice} Complete Rate Chart (With Plates) PDF ডাউনলোড করুন",
+        data=buffer,
+        file_name=f"{series_choice.lower()}_complete_rate_chart.pdf",
+        mime="application/pdf"
+    )
+RIES - {color_label} ITEMS</b>", section_style))
             rows = []
             for item in magnus_items:
                 name, sap, lp = item[0], item[sap_idx], item[lp_idx]
